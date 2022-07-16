@@ -12,7 +12,6 @@ function App() {
 
 const renderTimeInput = (state, action, changedTime) => {
   
-  const minutes = state[action.id + 'Length'].minutes
   const seconds = state[action.id + 'Length'].seconds
   const isPaused = state.isPaused
   const countdown = state.countdown
@@ -21,8 +20,8 @@ const renderTimeInput = (state, action, changedTime) => {
   // Check if we are rendering the main countdown
   if (countdown === id && isPaused) {
     // If we are then we have to add a 0 in front of the newly changed time if it's between 1 and 9 minutes
-    if (minutes + 1 > 0 && minutes + 1 < 10) {
-      return { [id + 'Length']: changedTime, 'time': { 'minutes': '0' + (minutes + 1), 'seconds': seconds } }
+    if (changedTime.minutes > 0 && changedTime.minutes < 10) {
+      return { [id + 'Length']: changedTime, 'time': { 'minutes': '0' + (changedTime.minutes), 'seconds': seconds } }
     }
     return { [id + 'Length']: changedTime, 'time': changedTime }
   }
@@ -90,26 +89,15 @@ const reducer = (state, action) => {
       if (state[actionProperty].minutes - 1 === 0) {
         return {...state}
       }
-
-      if (state[actionProperty].minutes - 1 > 0 && state[actionProperty].minutes - 1 < 10) {
         
-        decrementedTime = { minutes: state[actionProperty].minutes - 1, seconds: state[actionProperty].seconds }
+      decrementedTime = { minutes: state[actionProperty].minutes - 1, seconds: state[actionProperty].seconds }
 
-      } else {
-
-        decrementedTime = { minutes: state[actionProperty].minutes - 1, seconds: state[actionProperty].seconds }
-      }
-
-      if (state.countdown === action.id && state.isPaused) {
-        
-        if (state[actionProperty].minutes - 1 > 0 && state[actionProperty].minutes - 1 < 10) {
-
-          return {...state, [actionProperty]: decrementedTime, time: { minutes: '0' + (state[actionProperty].minutes - 1), seconds: state[actionProperty].seconds }}
+      return (
+        {
+          ...state,
+          ...renderTimeInput(state, action, decrementedTime)
         }
-        return {...state, [actionProperty]: decrementedTime, time: decrementedTime}
-      }
-
-      return {...state, [actionProperty]: decrementedTime}
+      )
 
     case 'tick':
       let minutes = state.time.minutes
