@@ -56,7 +56,8 @@ const reducer = (state, action) => {
         time: {"minutes": 25, "seconds": "00"},
         sessionLength: {"minutes": 25, "seconds": "00"}, breakLength: {"minutes": 5, "seconds": "00"},
         countdown: 'session',
-        'label': 'Session'}
+        'label': 'Session'
+      }
 
     case 'increment':
 
@@ -333,8 +334,8 @@ function SessionInput( { label, time, id }) {
       </div>
       
       <div className="arrow-container">
-        <button id={id + '-increment'} onClick={()=>dispatch({type: 'increment', 'id': id})}>Up</button>
-        <button id={id + '-decrement'} onClick={()=>dispatch({type: 'decrement', 'id': id})}>Down</button>
+        <button id={id + '-increment'} onClick={()=>dispatch({type: 'increment', 'id': id})}>+</button>
+        <button id={id + '-decrement'} onClick={()=>dispatch({type: 'decrement', 'id': id})}>&minus;</button>
       </div>
     </div>
   )
