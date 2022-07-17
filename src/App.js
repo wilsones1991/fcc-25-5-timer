@@ -17,17 +17,36 @@ const renderTimeInput = (state, action, changedTime) => {
   const countdown = state.countdown
   const id = action.id
 
+  // If timer mintues equals 60 minutes, make sure seconds aren't above 0.
+  if (changedTime.minutes === 60 && seconds > 0) {
+    return {...state}
+  }
+
+  // Don't let timer minutes go above 60 minutes.
+  if (changedTime.minutes > 60) {
+    return {...state}
+  }
+
+  // Make sure the timers don't go below 0 minutes.
+  if (changedTime.minutes <= 0) {
+    return {...state}
+  }
+
   // Check if we are rendering the main countdown
   if (countdown === id && isPaused) {
+
     // If we are then we have to add a 0 in front of the newly changed time if it's between 1 and 9 minutes
     if (changedTime.minutes > 0 && changedTime.minutes < 10) {
-      return { [id + 'Length']: changedTime, 'time': { 'minutes': '0' + (changedTime.minutes), 'seconds': seconds } }
+
+      return {...state, [id + 'Length']: changedTime, 'time': { 'minutes': '0' + (changedTime.minutes), 'seconds': seconds } }
     }
-    return { [id + 'Length']: changedTime, 'time': changedTime }
+
+    // Otherwise, tine is formatted correctly as is in the main countdown timer.
+    return {...state, [id + 'Length']: changedTime, 'time': changedTime }
   }
 
   // Otherwise, that means the user is incrementing the inactive countdown length. Therefore, we only render the control component, not the main countdown.
-  return { [id + 'Length']: changedTime }
+  return {...state, [id + 'Length']: changedTime }
 
 }
 
@@ -61,41 +80,21 @@ const reducer = (state, action) => {
 
     case 'increment':
 
-      // If timer mintues equals 60 minutes, make sure seconds aren't above 30.
-      if (state[actionProperty].minutes + 1 === 60) {
-        if (parseInt(state[actionProperty].seconds) > 0) {
-          return {...state}
-        }
-      }
-
-      // Don't let timer minutes go above 60 minutes.
-      if (state[actionProperty].minutes + 1 > 60) {
-        return {...state}
-      }
-
       // Store new incremented time object.
       const incrementedTime = { minutes: state[actionProperty].minutes + 1, seconds: state[actionProperty].seconds }
 
       return (
         {
-          ...state,
           ...renderTimeInput(state, action, incrementedTime)
         }
       )
 
     case 'decrement':
-
-      // Make sure the timers don't go below 0 minutes 1 seconds
-      let decrementedTime
-      if (state[actionProperty].minutes - 1 === 0) {
-        return {...state}
-      }
         
-      decrementedTime = { minutes: state[actionProperty].minutes - 1, seconds: state[actionProperty].seconds }
+      const decrementedTime = { minutes: state[actionProperty].minutes - 1, seconds: state[actionProperty].seconds }
 
       return (
         {
-          ...state,
           ...renderTimeInput(state, action, decrementedTime)
         }
       )
