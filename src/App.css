@@ -26,12 +26,16 @@ button:hover {
 }
 
 input[type='text'] {
-    display: flex;
     font-family: inherit;
     background: none;
     border: none;
-    font-size: 1.25rem;
-    width: 26px;
+    font-size: 1.45rem;
+    width: 30px;
+    position: relative;
+}
+
+input[type='text']::placeholder {
+    font-size: 1rem;
 }
 
 span {
@@ -40,7 +44,7 @@ span {
 
 
 h1 {
-    font-size: 3rem;
+    font-size: 2.5rem;
 }
 
 .timer {
@@ -53,7 +57,7 @@ h1 {
 }
 
 .session-input-container {
-    width: 100%;
+    width: 70%;
     display: flex;
     justify-content: space-evenly;
     align-items: center;
@@ -71,10 +75,19 @@ h1 {
 .time-input-container {
     display: flex;
     justify-content: center;
+    align-items: center;
     color: black;
     font-size: 1.25rem;
     background: white;
     margin: 10px 0;
+}
+
+.label {
+    font-size: 1.25rem;
+}
+
+.length-button {
+    font-size: 2.2rem;
 }
 
 .minutes-input {
@@ -92,6 +105,10 @@ h1 {
     justify-content: center;
     align-items: center;
     margin-bottom: 5px;
+    border: solid 4px rgb(227, 206, 14);
+    padding: 10px 50px;
+    border-radius: 10px;
+    margin-bottom: 30px;
 }
 
 .countdown-heading {
@@ -103,12 +120,42 @@ h1 {
     font-size: 4rem;
 }
 
+.arrow-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 70%;
+}
+
+.transport-container {
+    display: flex;
+    justify-content: space-around;
+    width: 50%;
+}
+
+.transport-container > button {
+    width: 100px;
+    color: rgb(30, 29, 29);
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.start-stop {
+    background: rgb(239, 221, 60);
+}
+
+.reset {
+    background: rgb(255, 255, 255);
+}
+
 .warning {
     color: red;
 }
 
-.arrow-container {
-    display: flex;
-    justify-content: space-around;
-    align-items: center; 
+.disabled {
+    background: rgb(187, 187, 187);
+}
+
+.disabled:hover {
+    cursor: not-allowed;
 }

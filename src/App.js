@@ -10,7 +10,56 @@ function App() {
   );
 }
 
-const renderTimeInput = (state, action, changedTime) => {
+const displayWarning = (warning) => {
+  console.log(warning)
+}
+
+const switchCountdown = (state) => {
+  
+  const whichCountdown = state.countdown === "session" ? "break" : "session"
+  const whichLabel = state.label === 'Session' ? 'Break' : 'Session'
+
+
+  if (state[whichCountdown + 'Length'].minutes > 0 || state[whichCountdown + 'Length'].minutes < 10) {
+    
+    return {...state, "countdown": whichCountdown, "time": {'minutes': '0' + state[whichCountdown + "Length"].minutes, 'seconds': state[whichCountdown + "Length"].seconds} , 'label': whichLabel }
+  }
+
+  return {...state, "countdown": whichCountdown, "time": state[whichCountdown + "Length"], 'label': whichLabel }
+}
+
+const renderSeconds = (state, action) => {
+
+  const minutes = state[action.id + 'Length'].minutes
+  const isPaused = state.isPaused
+  const countdown = state.countdown
+  const id = action.id
+
+  // If timer seconds are greater than 59, change to 55 and show warning message.
+
+  if (action.seconds > 59) {
+    action.seconds = '59'
+    displayWarning('Number of seconds cannot exceed 59.')
+  }
+
+  if (action.seconds.length === 1) {
+    action.seconds = '0' + action.seconds
+  }
+
+  if (action.seconds === '') {
+    action.seconds = '00'
+  }
+
+  const changedSeconds = { 'minutes': minutes, 'seconds': action.seconds }
+
+  if (countdown === id && isPaused) {
+    return {...state, [action.id + 'Length']: changedSeconds, 'time': {'minutes': state.time.minutes, 'seconds': action.seconds}}
+  }
+
+  return {...state, [action.id + 'Length']: changedSeconds}
+}
+
+const renderMinutes = (state, action, changedTime) => {
   
   const seconds = state[action.id + 'Length'].seconds
   const isPaused = state.isPaused
@@ -28,7 +77,7 @@ const renderTimeInput = (state, action, changedTime) => {
   }
 
   // Make sure the timers don't go below 0 minutes.
-  if (changedTime.minutes <= 0) {
+  if (Number(changedTime.minutes) <= 0) {
     return {...state}
   }
 
@@ -75,17 +124,18 @@ const reducer = (state, action) => {
         time: {"minutes": 25, "seconds": "00"},
         sessionLength: {"minutes": 25, "seconds": "00"}, breakLength: {"minutes": 5, "seconds": "00"},
         countdown: 'session',
-        'label': 'Session'
+        label: 'Session',
+        startEnabled: true
       }
 
     case 'increment':
 
       // Store new incremented time object.
-      const incrementedTime = { minutes: state[actionProperty].minutes + 1, seconds: state[actionProperty].seconds }
+      const incrementedTime = { minutes: (Number(state[actionProperty].minutes) + 1).toString(), seconds: state[actionProperty].seconds }
 
       return (
         {
-          ...renderTimeInput(state, action, incrementedTime)
+          ...renderMinutes(state, action, incrementedTime)
         }
       )
 
@@ -95,30 +145,36 @@ const reducer = (state, action) => {
 
       return (
         {
-          ...renderTimeInput(state, action, decrementedTime)
+          ...renderMinutes(state, action, decrementedTime)
         }
       )
 
     case 'tick':
+      
       let minutes = state.time.minutes
       let seconds = state.time.seconds
-
-      if (action.playBeep) {
+        
+      if (minutes === '00' && seconds === '01') {
         beep.play()
       }
       if (seconds === "00") {
-        if ((parseInt(minutes) - 1) < 10) {
-          minutes = "0" + (parseInt(minutes) - 1).toString()
+        if (minutes === '00') {
+          return switchCountdown(state)
+        } else if ((Number(minutes) - 1) < 10) {
+          minutes = "0" + (Number(minutes) - 1).toString()
           seconds = "59"
         } else {
-          minutes = parseInt(minutes) - 1
+          minutes = Number(minutes) - 1
           seconds = "59"
         }
-      } else if (parseInt(seconds) > 10) {
-        seconds = parseInt(seconds) - 1
+
+      } else if (Number(seconds) > 10) {
+        seconds = Number(seconds) - 1
+
       } else {
-        seconds = "0" + (parseInt(seconds) - 1)
+        seconds = "0" + (Number(seconds) - 1)
       }
+
       return { ...state, "time": { "minutes": minutes.toString(), "seconds": seconds.toString() } }
 
       case 'switchCountdown':
@@ -132,121 +188,53 @@ const reducer = (state, action) => {
         return {...state, "countdown": whichCountdown, "time": state[whichCountdown + "Length"], 'label': whichLabel }
 
       case 'minutesChange':
+
+      let startEnabled
+        if (isNaN(action.minutes)) {
+          return {...state}
+        }
+
+        if (action.minutes !== '') {
+          startEnabled = true
+        } else {
+          startEnabled = false
+        }
+
         
-        const minutesNumber = parseInt(action.minutes)
-        const secondsNumber = parseInt(state[actionProperty].seconds)
-
-        if (minutesNumber === 60 && secondsNumber > 0) {
-          return {...state}
-        }
-
-        if (minutesNumber > 60 || isNaN(minutesNumber)) {
-          return {...state}
-        }
-
-        return {...state, [actionProperty]: { 'minutes': action.minutes, 'seconds': state[actionProperty].seconds }}
+        return {...state, [actionProperty]: { 'minutes': action.minutes, 'seconds': state[actionProperty].seconds }, startEnabled: startEnabled}
     
     case 'minutesCleanup':
-      return handleMinutesCleanup(state, action)
-    
+      
+      // Reformat minutes if necessary after user has finished typing in changes to minutes.
+
+      const errWithMinutes = 'Number of minutes must be between 1 and 60.'
+
+      if (action.minutes === '' || action.minutes < 1 || (action.minutes === 60 && state[actionProperty].length > 0)|| action.minutes > 60) {
+
+        displayWarning(errWithMinutes)
+        return {...state, startEnabled: false}
+      }
+
+      const changedTime = { 'minutes': action.minutes, 'seconds': state[actionProperty].seconds }
+
+      return {
+
+        ...renderMinutes(state, action, changedTime), startEnabled: true}
+      
     case 'secondsChange':
-      return handleSecondsChange(state, action)
+      
+      if (isNaN(action.seconds)) {
+        return {...state}
+      }
+    
+      return {...state, [actionProperty]: { 'minutes': state[actionProperty].minutes, 'seconds': action.seconds }}
     
     case 'secondsCleanup':
-      return handleSecondsCleanup(state, action)
+      
+      return renderSeconds(state, action)
+
     default:
       throw new Error('Did not work')
-  }
-}
-
-const handleSecondsChange = (state, action) => {
-  
-  const actionProperty = action.id + 'Length'
-  const minutesNumber = parseInt(state[actionProperty].minutes)
-  const secondsNumber = parseInt(action.seconds)
-
-    if (minutesNumber === 60 && secondsNumber > 0) {
-          return {...state}
-    }
-    if (secondsNumber < 0 || secondsNumber > 59 || isNaN(secondsNumber)) {
-      return {...state}
-    }
-
-    return {...state, [actionProperty]: { 'minutes': state[actionProperty].minutes, 'seconds': action.seconds }}
-}
-
-const handleMinutesCleanup = (state, action) => {
-  const actionProperty = action.id + 'Length'
-  
-  let updatedLength = { 'minutes': state[actionProperty].minutes, 'seconds': state[actionProperty].seconds }
-
-  let updatedTime = { 'minutes': state.time.minutes, 'seconds': state.time.seconds}
-
-  const updatedMinutes = state[state.countdown + 'Length'].minutes
-  const updatedSeconds = state[state.countdown + 'Length'].seconds
-
-  if (parseInt(action.minutes) === 0) {
-    updatedLength = { 'minutes': "0", 'seconds': state[actionProperty].seconds }
-    updatedTime = { 'minutes': "00", 'seconds': state[actionProperty].seconds }
-  } else if (action.minutes.length === 1) {
-    const cleanMinutes = action.minutes
-    
-    updatedLength = { 'minutes': cleanMinutes, 'seconds': state[actionProperty].seconds }
-    updatedTime = { 'minutes': '0' + cleanMinutes, 'seconds': state[actionProperty].seconds }
-
-  } else if (action.minutes === "" && action.id !== state.countdown) {
-    updatedLength = {'minutes': '0', 'seconds': state[actionProperty].seconds}
-
-  } else if (action.id === state.countdown && action.minutes === "") {
-      updatedLength = {'minutes': '0', 'seconds': state[actionProperty].seconds}
-      updatedTime = {'minutes': '00', 'seconds': state[actionProperty].seconds }
-  } else {
-    updatedTime = { 'minutes': updatedMinutes, 'seconds': updatedSeconds }
-  }
-  if (action.id === state.countdown && state.isPaused) {
-    return {...state, [actionProperty]: updatedLength, 'time': updatedTime}
-  } else {
-    return {...state, [actionProperty]: updatedLength}
-  }
-}
-
-const handleSecondsCleanup = (state, action) => {
-  const actionProperty = action.id + 'Length'
-  
-  let updatedLength = { 'minutes': state[actionProperty].minutes, 'seconds': state[actionProperty].seconds }
-
-  let updatedTime = { 'minutes': state.time.minutes, 'seconds': state.time.seconds}
-
-  const updatedMinutes = state[state.countdown + 'Length'].minutes
-  const updatedSeconds = state[state.countdown + 'Length'].seconds
-
-  if (action.seconds.length === 1) {
-        
-    const cleanSeconds = "0" + action.seconds
-    
-    updatedLength = { 'minutes': state[actionProperty].minutes, 'seconds': cleanSeconds }
-    updatedTime = { 'minutes': state[actionProperty].minutes, 'seconds': cleanSeconds }
-    console.log(updatedTime)
-
-  } else if (action.seconds === "" && action.id !== state.countdown) {
-    
-    updatedLength = {'minutes': state[actionProperty.minutes], 'seconds': '00'}
-  } else if (action.id === state.countdown && action.seconds === "") {
-      updatedLength = {'minutes': state[actionProperty].minutes, 'seconds': '00'}
-      updatedTime = {'minutes': state[actionProperty].minutes, 'seconds': '00' }
-  } else {
-    updatedTime = { 'minutes': updatedMinutes, 'seconds': updatedSeconds }
-  }
-  
-  if (action.id === state.countdown && state.isPaused) {
-    if (state[actionProperty].minutes.length === 1) {
-      updatedTime = { 'minutes': '0' + updatedMinutes, 'seconds': updatedSeconds }
-    }
-
-    return {...state, [actionProperty]: updatedLength, 'time': updatedTime}
-
-  } else {
-    return {...state, [actionProperty]: updatedLength}
   }
 }
 
@@ -272,7 +260,8 @@ function Timer() {
       },
       "isPaused": "true",
       "countdown": "session",
-      'label': 'Session'
+      'label': 'Session',
+      'startEnabled': true
     }
   )
 
@@ -282,18 +271,12 @@ function Timer() {
 
     if (!state.isPaused) {
       interval = setInterval(() => {
-        if (state.time.minutes === '00' && state.time.seconds === '01') {
-          dispatch({ type: 'tick', playBeep: true  })
-        }
-        else if (state.time.minutes === '00' && state.time.seconds === '00') {
-          dispatch({type: 'switchCountdown'})
-        } else {
-          dispatch({ 'type': 'tick' })
-        }
+        dispatch({ type: 'tick' })
       }, 1000)
     }
+
     return () => clearInterval(interval)
-  }, [state.isPaused, state.time.minutes, state.time.seconds])
+  }, [state.isPaused])
 
   return (
     <TimerDispatch.Provider value={dispatch}>
@@ -308,8 +291,8 @@ function Timer() {
         <audio id='beep' className='beep' src={beep} />
 
         <div className="transport-container">
-          <StartStop isPaused={state.isPaused} />
-          <button id="reset" name="reset" onClick={()=>dispatch({type: 'reset'})}>Reset</button>
+          <StartStop isPaused={state.isPaused} startEnabled={state.startEnabled} />
+          <button id="reset" className='reset' name="reset" onClick={()=>dispatch({type: 'reset'})}>Reset</button>
         </div>
     </div>
   </TimerDispatch.Provider>
@@ -325,16 +308,22 @@ function SessionInput( { label, time, id }) {
   return (
 
     <div className="session-input">
-      <label id={id + '-label'}>{label} Length</label>
+      <label id={id + '-label'} className='label' >{label} Length</label>
       <div className="time-input-container">
-        <input id={domid} className="minutes-input" type="text" value={time.minutes} /* onChange={(e)=>dispatch({type: 'minutesChange', 'id': id, 'minutes': e.target.value})} onBlur={(e)=>dispatch({type: 'minutesCleanup', 'id': id, 'minutes': e.target.value })} */ />
+
+        <input id={domid} className="minutes-input" type="text" placeholder='mm' value={time.minutes} onChange={(e)=>dispatch({type: 'minutesChange', 'id': id, 'minutes': e.target.value})} onBlur={(e)=>dispatch({type: 'minutesCleanup', 'id': id, 'minutes': e.target.value })} />
+
         <span>:</span>
-        <input className="seconds-input" type="text" value={time.seconds} /* onChange={(e)=>dispatch({type: 'secondsChange', 'id': id, 'seconds': e.target.value})} onBlur={(e)=>dispatch({type: 'secondsCleanup', 'id': id, 'seconds': e.target.value})} */ />
+
+        <input className="seconds-input" type="text" value={time.seconds} onChange={(e)=>dispatch({type: 'secondsChange', 'id': id, 'seconds': e.target.value})} onBlur={(e)=>dispatch({type: 'secondsCleanup', 'id': id, 'seconds': e.target.value})} />
+
       </div>
       
       <div className="arrow-container">
-        <button id={id + '-increment'} onClick={()=>dispatch({type: 'increment', 'id': id})}>+</button>
-        <button id={id + '-decrement'} onClick={()=>dispatch({type: 'decrement', 'id': id})}>&minus;</button>
+        <button id={id + '-increment'} onClick={()=>dispatch({type: 'increment', 'id': id})} className='length-button'>+</button>
+
+        <button id={id + '-decrement'} onClick={()=>dispatch({type: 'decrement', 'id': id})} className='length-button'>&minus;</button>
+
       </div>
     </div>
   )
@@ -366,10 +355,23 @@ function SessionCountdown( { time, label } ) {
   )
 }
 
-const StartStop = ( { isPaused } ) => {
+const StartStop = ( { isPaused, startEnabled } ) => {
   
   const dispatch = useContext(TimerDispatch)
 
+  useEffect(() => {
+    const startStop = document.getElementById("start_stop")
+    if (!startEnabled) {
+      startStop.disabled = true
+      startStop.classList.add('disabled')
+    } else {
+      startStop.disabled = false
+      startStop.classList.remove('disabled')
+    }
+  },[startEnabled])
+
+
+  // console.log(document.getElementById("start_stop").disabled)
   let icon
 
   if (isPaused) {
@@ -381,9 +383,9 @@ const StartStop = ( { isPaused } ) => {
   const action = () => {
     return { type: 'startStop' }
   }
-  
+
   return (
-    <button id="start_stop" name="play-pause-button" onClick={()=> dispatch(action())} >{icon}</button>
+    <button id="start_stop" className="start-stop" name="play-pause-button" onClick={()=> dispatch(action())} >{icon}</button>
   )
 }
 
