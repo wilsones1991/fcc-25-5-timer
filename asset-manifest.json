@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/fcc-25-5-timer/static/css/main.fc9d57b3.css",
-    "main.js": "/fcc-25-5-timer/static/js/main.b8f406d0.js",
+    "main.css": "/fcc-25-5-timer/static/css/main.5b4da576.css",
+    "main.js": "/fcc-25-5-timer/static/js/main.344ed525.js",
     "static/js/787.246363d6.chunk.js": "/fcc-25-5-timer/static/js/787.246363d6.chunk.js",
     "static/media/alarm-sound.wav": "/fcc-25-5-timer/static/media/alarm-sound.de6d74acf2973d2c1791.wav",
     "index.html": "/fcc-25-5-timer/index.html",
-    "main.fc9d57b3.css.map": "/fcc-25-5-timer/static/css/main.fc9d57b3.css.map",
-    "main.b8f406d0.js.map": "/fcc-25-5-timer/static/js/main.b8f406d0.js.map",
+    "main.5b4da576.css.map": "/fcc-25-5-timer/static/css/main.5b4da576.css.map",
+    "main.344ed525.js.map": "/fcc-25-5-timer/static/js/main.344ed525.js.map",
     "787.246363d6.chunk.js.map": "/fcc-25-5-timer/static/js/787.246363d6.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.fc9d57b3.css",
-    "static/js/main.b8f406d0.js"
+    "static/css/main.5b4da576.css",
+    "static/js/main.344ed525.js"
   ]
 }
